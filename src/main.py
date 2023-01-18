@@ -6,7 +6,7 @@ def main() -> None:
     ## Inicializar ventana
     root = Tk()
     root.title('CRUD')
-    root.geometry('800x350')
+    root.geometry('900x350')
 
     ## Crear app
     MainApp(root).pack(side='top', fill='both', expand=True)

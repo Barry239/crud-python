@@ -1,81 +1,63 @@
-from mysql import connector
+from pymongo import MongoClient
+from bson import ObjectId
+
 from models import User
 
 class DBConnection:
-    DB_HOST = 'localhost'
+    DB_HOST = 'localhost:27017'
     DB_NAME = 'pycrud'
-    DB_USER = 'root'
-    DB_PWD = 'n0m3l0'
 
     def __getDBConnection(self):
-        return connector.connect(
-            host=self.DB_HOST,
-            database=self.DB_NAME,
-            user=self.DB_USER,
-            password=self.DB_PWD
-        )
+        return MongoClient(f'mongodb://{self.DB_HOST}/')
 
-    def createUser(self, user):
+    def createUser(self, user: User):
         conn = self.__getDBConnection()
-        cursor = conn.cursor(prepared=True)
+        db = conn[self.DB_NAME]
+        collection = db['users']
 
-        query = "INSERT INTO users(username, email) VALUES (%s, %s)"
-        cursor.execute(query, (user.getUsername(), user.getEmail(),))
+        data = { 'username': user.getUsername(), 'email': user.getEmail() }
+        collection.insert_one(data)
 
-        conn.commit()
-
-        cursor.close()
         conn.close()
 
     def getUsers(self):
         conn = self.__getDBConnection()
-        cursor = conn.cursor(dictionary=True)
+        db = conn[self.DB_NAME]
+        collection = db['users']
 
-        query = "SELECT * FROM users"
-        cursor.execute(query)
+        users = [User(row['_id'], row['username'], row['email']) for row in collection.find()]
 
-        users = [User(row['id'], row['username'], row['email']) for row in cursor.fetchall()]
-
-        cursor.close()
         conn.close()
 
         return users
 
     def getUser(self, id):
         conn = self.__getDBConnection()
-        cursor = conn.cursor(dictionary=True, prepared=True)
+        db = conn[self.DB_NAME]
+        collection = db['users']
 
-        query = "SELECT * FROM users WHERE id=%s"
-        cursor.execute(query, (id,))
+        row = collection.find_one({ '_id': ObjectId(id) })
+        user = User(row['_id'], row['username'], row['email'])
 
-        row = cursor.fetchone()
-        user = User(row['id'], row['username'], row['email'])
-
-        cursor.close()
         conn.close()
 
         return user
 
     def updateUser(self, id, user):
         conn = self.__getDBConnection()
-        cursor = conn.cursor(prepared=True)
+        db = conn[self.DB_NAME]
+        collection = db['users']
 
-        query = "UPDATE users SET username=%s, email=%s WHERE id=%s"
-        cursor.execute(query, (user.getUsername(), user.getEmail(), id,))
+        data = { '$set': { 'username': user.getUsername(), 'email': user.getEmail() } }
+        collection.update_one({ '_id': ObjectId(id) }, data)
 
-        conn.commit()
-
-        cursor.close()
         conn.close()
 
     def deleteUser(self, id):
         conn = self.__getDBConnection()
-        cursor = conn.cursor(prepared=True)
+        db = conn[self.DB_NAME]
+        collection = db['users']
 
-        query = "DELETE FROM users WHERE id=%s"
-        cursor.execute(query, (id,))
+        collection.delete_one({ '_id': ObjectId(id) })
 
-        conn.commit()
-
-        cursor.close()
         conn.close()
