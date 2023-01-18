@@ -1,0 +1,7 @@
+## Virtual env files
+Lib/
+Scripts/
+pyvenv.cfg
+
+## Python generated files
+__pycache__/
